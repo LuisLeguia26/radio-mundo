@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="viewport-fit=cover,width=device-width,height=device-height,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Radio Mundo">
+<meta name="theme-color" content="#0c0e14">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Radio Mundo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e14;
+    --surface: #15181f;
+    --surface2: #1c2029;
+    --accent: #ff5a1e;
+    --accent-dim: #ff5a1e33;
+    --text: #f0f1f3;
+    --muted: #7a7f8c;
+    --line: #262a35;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  #app { height: 100%; display: flex; flex-direction: column; }
+
+  header {
+    padding: calc(var(--safe-top) + 18px) 20px 14px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .logo-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .logo-mark { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .logo-text { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+  .logo-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.05em; }
+
+  .search-wrap { position: relative; }
+  #search {
+    width: 100%; padding: 11px 14px 11px 38px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; color: var(--text); font-size: 15px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  #search::placeholder { color: var(--muted); }
+  #search:focus { outline: none; border-color: var(--accent); }
+  .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; }
+
+  .chips-wrap {
+    padding: 12px 20px 0; flex-shrink: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; padding: 7px 14px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line);
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #0c0e14; font-weight: 700; }
+  .chip-flag { font-size: 14px; }
+
+  main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 20px calc(140px + var(--safe-bottom)); }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase; margin: 18px 0 10px;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  .station-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    margin-bottom: 8px; cursor: pointer; transition: background 0.15s;
+  }
+  .station-row:active { background: var(--surface2); }
+  .station-row.playing { border-color: var(--accent); background: var(--accent-dim); }
+
+  .station-art {
+    width: 42px; height: 42px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, #ff5a1e, #ff8c42);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #0c0e14;
+  }
+  .station-info { flex: 1; min-width: 0; }
+  .station-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .station-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .station-play-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; }
+  .station-row.playing .station-play-icon { background: var(--accent); color: #0c0e14; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .e-icon { font-size: 32px; margin-bottom: 12px; }
+  .empty-state .e-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .empty-state .e-sub { font-size: 12px; }
+
+  .loading-row { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 30px; color: var(--muted); font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #player {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding: 14px 20px calc(16px + var(--safe-bottom));
+    transform: translateY(110%); transition: transform 0.3s ease;
+    z-index: 10;
+  }
+  #player.visible { transform: translateY(0); }
+
+  .player-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .player-art {
+    width: 46px; height: 46px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, #ff5a1e, #ff8c42);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #0c0e14; position: relative; overflow: hidden;
+  }
+  .eq-bars { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+  .eq-bars span { width: 3px; background: #0c0e14; border-radius: 1px; animation: eq 0.8s ease-in-out infinite; }
+  .eq-bars span:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .eq-bars span:nth-child(2) { height: 100%; animation-delay: 0.15s; }
+  .eq-bars span:nth-child(3) { height: 60%; animation-delay: 0.3s; }
+  .eq-bars span:nth-child(4) { height: 80%; animation-delay: 0.45s; }
+  @keyframes eq { 0%,100% { transform: scaleY(0.4); } 50% { transform: scaleY(1); } }
+
+  .player-info { flex: 1; min-width: 0; }
+  .player-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-status { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); margin-top: 2px; }
+
+  .player-btn {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #0c0e14; flex-shrink: 0; border: none; cursor: pointer;
+  }
+
+  .vol-row { display: flex; align-items: center; gap: 10px; }
+  .vol-row span { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+  input[type="range"] {
+    flex: 1; -webkit-appearance: none; height: 4px;
+    background: var(--line); border-radius: 2px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+  }
+
+  .install-hint {
+    margin: 0 0 14px; padding: 12px 14px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--accent);
+    font-size: 12px; color: var(--text); line-height: 1.6; display: none;
+  }
+  .install-hint.show { display: block; }
+  .install-hint b { color: var(--accent); }
+  .install-close { float: right; color: var(--muted); font-size: 16px; cursor: pointer; margin-left: 8px; }
+
+  audio { display: none; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header>
+    <div class="logo-row">
+      <div class="logo-mark"></div>
+      <div class="logo-text">Radio Mundo</div>
+      <div class="logo-sub">LIVE · GLOBAL</div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input id="search" type="text" placeholder="Buscar emisora, ciudad, género..." autocomplete="off">
+    </div>
+  </header>
+
+  <div class="chips-wrap">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <main id="main">
+    <div id="installHint" class="install-hint">
+      <span class="install-close" onclick="closeInstallHint()">✕</span>
+      <b>Añadir a tu pantalla de inicio:</b><br>
+      Toca el botón Compartir en Safari, luego "Añadir a pantalla de inicio". Así Radio Mundo funciona como una app, con ícono propio.
+    </div>
+    <div id="content"></div>
+  </main>
+
+  <div id="player">
+    <div class="player-top">
+      <div class="player-art" id="playerArt">
+        <div class="eq-bars" id="eqBars"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="player-info">
+        <div class="player-name" id="playerName">—</div>
+        <div class="player-status" id="playerStatus">EN VIVO</div>
+      </div>
+      <button class="player-btn" id="playBtn" onclick="togglePlay()">⏸</button>
+    </div>
+    <div class="vol-row">
+      <span>🔈</span>
+      <input type="range" id="volSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+      <span>🔊</span>
+    </div>
+  </div>
+
+</div>
+
+<audio id="audioEl" preload="none"></audio>
+
+<script>
+const API_BASE = 'https://de1.api.radio-browser.info';
+const FALLBACK_API = 'https://de2.api.radio-browser.info';
+
+const countries = [
+  { code: 'all', name: 'Buscar', flag: '⌕' },
+  { code: 'RU-Moscow', name: 'Moscú', flag: '🇷🇺', special: 'moscow' },
+  { code: 'Russia', name: 'Rusia', flag: '🇷🇺' },
+  { code: 'Colombia', name: 'Colombia', flag: '🇨🇴' },
+  { code: 'United States', name: 'EE.UU.', flag: '🇺🇸' },
+  { code: 'United Kingdom', name: 'Reino Unido', flag: '🇬🇧' },
+  { code: 'Spain', name: 'España', flag: '🇪🇸' },
+  { code: 'Mexico', name: 'México', flag: '🇲🇽' },
+  { code: 'Argentina', name: 'Argentina', flag: '🇦🇷' },
+  { code: 'France', name: 'Francia', flag: '🇫🇷' },
+  { code: 'Germany', name: 'Alemania', flag: '🇩🇪' },
+  { code: 'Italy', name: 'Italia', flag: '🇮🇹' },
+  { code: 'Japan', name: 'Japón', flag: '🇯🇵' },
+  { code: 'Brazil', name: 'Brasil', flag: '🇧🇷' },
+];
+
+let currentAudio = document.getElementById('audioEl');
+let currentStation = null;
+let isPlaying = false;
+let activeFilter = 'RU-Moscow';
+
+function renderChips() {
+  const wrap = document.getElementById('chips');
+  wrap.innerHTML = countries.map(c =>
+    `<div class="chip ${c.code === activeFilter ? 'active' : ''}" onclick="selectCountry('${c.code}')">
+      <span class="chip-flag">${c.flag}</span>${c.name}
+    </div>`
+  ).join('');
+}
+
+function selectCountry(code) {
+  activeFilter = code;
+  renderChips();
+  const country = countries.find(c => c.code === code);
+  if (country.special === 'moscow') {
+    loadStations({ country: 'Russia', state: 'Moscow' });
+  } else if (code === 'all') {
+    document.getElementById('search').focus();
+  } else {
+    loadStations({ country: code });
+  }
+}
+
+async function fetchFrom(base, path) {
+  const res = await fetch(base + path, { headers: { 'User-Agent': 'RadioMundoPWA/1.0' } });
+  if (!res.ok) throw new Error('bad response');
+  return res.json();
+}
+
+async function fetchStations(params) {
+  const qs = new URLSearchParams({ ...params, limit: 40, hidebroken: 'true', order: 'clickcount', reverse: 'true' }).toString();
+  try {
+    return await fetchFrom(API_BASE, '/json/stations/search?' + qs);
+  } catch (e) {
+    return await fetchFrom(FALLBACK_API, '/json/stations/search?' + qs);
+  }
+}
+
+function renderLoading() {
+  document.getElementById('content').innerHTML = `<div class="loading-row"><div class="spinner"></div>Cargando emisoras...</div>`;
+}
+
+function renderEmpty(msg) {
+  document.getElementById('content').innerHTML = `
+    <div class="empty-state">
+      <div class="e-icon">📡</div>
+      <div class="e-title">Sin resultados</div>
+      <div class="e-sub">${msg || 'Prueba con otra búsqueda'}</div>
+    </div>`;
+}
+
+function renderStations(stations, label) {
+  if (!stations || stations.length === 0) {
+    renderEmpty();
+    return;
+  }
+  const html = `
+    <div class="section-label">${label} · ${stations.length} emisoras</div>
+    ${stations.map(s => stationRowHtml(s)).join('')}
+  `;
+  document.getElementById('content').innerHTML = html;
+}
+
+function stationRowHtml(s) {
+  const initial = (s.name || '?').trim().charAt(0).toUpperCase();
+  const isCurrentlyPlaying = currentStation && currentStation.stationuuid === s.stationuuid;
+  return `
+    <div class="station-row ${isCurrentlyPlaying ? 'playing' : ''}" onclick='playStation(${JSON.stringify(s).replace(/'/g, "&apos;")})'>
+      <div class="station-art">${initial}</div>
+      <div class="station-info">
+        <div class="station-name">${escapeHtml(s.name)}</div>
+        <div class="station-meta">${escapeHtml(s.country || '')}${s.tags ? ' · ' + escapeHtml(s.tags.split(',')[0]) : ''}</div>
+      </div>
+      <div class="station-play-icon">${isCurrentlyPlaying && isPlaying ? '⏸' : '▶'}</div>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function loadStations(params) {
+  renderLoading();
+  try {
+    const stations = await fetchStations(params);
+    const label = params.state || params.country || params.name || 'Resultados';
+    renderStations(stations, label);
+  } catch (e) {
+    renderEmpty('No se pudo conectar. Revisa tu internet.');
+  }
+}
+
+let searchTimeout;
+document.getElementById('search').addEventListener('input', (e) => {
+  clearTimeout(searchTimeout);
+  const q = e.target.value.trim();
+  if (q.length < 2) return;
+  activeFilter = 'all';
+  renderChips();
+  searchTimeout = setTimeout(() => {
+    loadStations({ name: q });
+  }, 500);
+});
+
+function playStation(station) {
+  currentStation = station;
+  const url = station.url_resolved || station.url;
+  currentAudio.src = url;
+  currentAudio.volume = document.getElementById('volSlider').value / 100;
+  currentAudio.play().then(() => {
+    isPlaying = true;
+    updatePlayerUI();
+  }).catch(() => {
+    document.getElementById('playerStatus').textContent = 'ERROR DE CONEXIÓN';
+  });
+  showPlayer();
+  updatePlayerUI();
+  refreshStationRows();
+}
+
+function togglePlay() {
+  if (!currentStation) return;
+  if (isPlaying) {
+    currentAudio.pause();
+    isPlaying = false;
+  } else {
+    currentAudio.play();
+    isPlaying = true;
+  }
+  updatePlayerUI();
+  refreshStationRows();
+}
+
+function refreshStationRows() {
+  const rows = document.querySelectorAll('.station-row');
+  rows.forEach(row => {
+    const nameEl = row.querySelector('.station-name');
+    if (currentStation && nameEl && nameEl.textContent === currentStation.name) {
+      row.classList.add('playing');
+      row.querySelector('.station-play-icon').textContent = isPlaying ? '⏸' : '▶';
+    } else {
+      row.classList.remove('playing');
+      row.querySelector('.station-play-icon').textContent = '▶';
+    }
+  });
+}
+
+function updatePlayerUI() {
+  document.getElementById('playerName').textContent = currentStation ? currentStation.name : '—';
+  document.getElementById('playerStatus').textContent = isPlaying ? 'EN VIVO' : 'PAUSADO';
+  document.getElementById('playBtn').textContent = isPlaying ? '⏸' : '▶';
+  const art = document.getElementById('playerArt');
+  if (isPlaying) {
+    art.innerHTML = '<div class="eq-bars" id="eqBars"><span></span><span></span><span></span><span></span></div>';
+  } else {
+    art.textContent = currentStation ? currentStation.name.charAt(0).toUpperCase() : '';
+  }
+}
+
+function showPlayer() {
+  document.getElementById('player').classList.add('visible');
+}
+
+function setVolume(val) {
+  currentAudio.volume = val / 100;
+}
+
+function closeInstallHint() {
+  document.getElementById('installHint').classList.remove('show');
+  localStorage.setItem('hintClosed', '1');
+}
+
+function checkInstallHint() {
+  const isStandalone = window.navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS && !isStandalone && !localStorage.getItem('hintClosed')) {
+    document.getElementById('installHint').classList.add('show');
+  }
+}
+
+currentAudio.addEventListener('waiting', () => {
+  document.getElementById('playerStatus').textContent = 'CARGANDO...';
+});
+currentAudio.addEventListener('playing', () => {
+  document.getElementById('playerStatus').textContent = 'EN VIVO';
+});
+currentAudio.addEventListener('error', () => {
+  document.getElementById('playerStatus').textContent = 'ERROR DE SEÑAL';
+  isPlaying = false;
+  updatePlayerUI();
+});
+
+renderChips();
+loadStations({ country: 'Russia', state: 'Moscow' });
+checkInstallHint();
+</script>
+</body>
+</html>
